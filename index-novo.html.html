@@ -1,0 +1,203 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#172b27">
+<title>LucroCerto — Gestão de vendas</title>
+<style>
+:root{--ink:#172b27;--muted:#718079;--green:#d7e8d9;--paper:#f7f5ef;--gold:#d4ae73;--line:#e7e9e3;--white:#fff;--red:#b94c45;--shadow:0 12px 32px rgba(23,43,39,.07)}
+*{box-sizing:border-box}body{margin:0;background:#f4f5f1;color:var(--ink);font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+button,input,select{font:inherit}button{cursor:pointer}.app{min-height:100vh;display:grid;grid-template-columns:250px 1fr}
+aside{background:var(--ink);color:#fff;padding:26px 18px;display:flex;flex-direction:column;gap:28px}
+.brand{display:flex;gap:11px;align-items:center;padding:0 8px}.logo{width:42px;height:42px;border-radius:13px;background:var(--green);color:var(--ink);display:grid;place-items:center;font-size:23px;font-weight:800}.brand strong{font-size:21px;letter-spacing:-.7px}.brand small{display:block;color:#b9c9bf;font-size:11px;letter-spacing:.4px}
+nav{display:grid;gap:7px}.nav{border:0;background:transparent;color:#c6d1ca;text-align:left;padding:12px 13px;border-radius:10px;display:flex;gap:12px;align-items:center}.nav:hover,.nav.active{background:#29443b;color:white}.nav span:first-child{width:20px;text-align:center;font-size:17px}.side-note{margin-top:auto;background:#223a32;border:1px solid #385348;border-radius:14px;padding:15px;color:#dbe7df;font-size:12px}.side-note b{display:block;font-size:14px;margin-bottom:5px}
+main{padding:30px clamp(18px,4vw,54px);max-width:1500px;width:100%;margin:auto}.top{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:1.4px;color:var(--muted);font-weight:700}.top h1{font-size:28px;letter-spacing:-1px;margin:4px 0}.top p{margin:0;color:var(--muted)}.top-right{display:flex;gap:10px;align-items:center}.pill{background:#fff;border:1px solid var(--line);border-radius:99px;padding:9px 13px;color:#526159;font-size:12px}
+.btn{border:0;background:var(--ink);color:white;padding:11px 16px;border-radius:10px;font-weight:650}.btn:hover{background:#29443b}.btn.secondary{background:white;color:var(--ink);border:1px solid var(--line)}.btn.gold{background:var(--gold);color:#2b281f}
+.view{display:none}.view.active{display:block}.grid{display:grid;gap:16px}.stats{grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:18px}.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:19px;box-shadow:0 2px 8px rgba(23,43,39,.025)}.stat-label{color:var(--muted);font-size:12px}.stat-value{font-size:25px;font-weight:750;letter-spacing:-.8px;margin:8px 0 4px}.stat-foot{font-size:11px;color:var(--muted)}.stat-icon{float:right;background:var(--paper);width:34px;height:34px;border-radius:10px;display:grid;place-items:center}
+.two{grid-template-columns:1.15fr .85fr}.section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:15px}.section-head h2{font-size:16px;margin:0;letter-spacing:-.3px}.section-head small{color:var(--muted)}
+.empty{padding:27px 10px;text-align:center;color:var(--muted);font-size:13px}.empty .emoji{font-size:28px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;color:var(--muted);font-weight:600;font-size:11px;padding:10px 8px;border-bottom:1px solid var(--line)}td{padding:12px 8px;border-bottom:1px solid #f0f1ed}tr:last-child td{border-bottom:0}.positive{color:#28754d;font-weight:700}.negative{color:var(--red);font-weight:700}.tag{font-size:10px;background:#eef4ef;color:#41634d;padding:4px 8px;border-radius:99px;white-space:nowrap}
+.form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}.field{display:grid;gap:6px}.field.full{grid-column:1/-1}.field label{font-size:12px;color:#5d6b63;font-weight:650}.field input,.field select{width:100%;border:1px solid #dfe4dd;border-radius:9px;padding:11px 12px;background:white;color:var(--ink);outline:none}.field input:focus,.field select:focus{border-color:#72947c;box-shadow:0 0 0 3px #d7e8d966}
+.result{background:var(--ink);color:white;border-radius:15px;padding:20px;margin-top:16px}.result small{color:#b9c9bf}.result strong{display:block;font-size:32px;letter-spacing:-1px;margin:5px 0}.result .sub{color:#d7e8d9;font-size:12px}
+.actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:15px}.muted{color:var(--muted)}.toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.toolbar input,.toolbar select{border:1px solid var(--line);background:white;border-radius:9px;padding:10px}
+.toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:white;padding:12px 16px;border-radius:10px;box-shadow:var(--shadow);display:none;z-index:5}
+.mobile-brand{display:none}
+@media(max-width:950px){.app{grid-template-columns:210px 1fr}.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
+@media(max-width:680px){.app{display:block}aside{padding:12px 14px;position:sticky;top:0;z-index:3;gap:12px}.brand{padding:0}.brand small,.side-note{display:none}nav{display:flex;overflow:auto;gap:5px}.nav{padding:9px 11px;white-space:nowrap;font-size:12px}.nav span:first-child{display:none}main{padding:22px 14px}.top{align-items:flex-start}.top h1{font-size:23px}.top-right .pill{display:none}.stats{gap:9px}.card{padding:15px}.stat-value{font-size:21px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.top-right .btn{padding:9px 11px;font-size:12px}}
+
+.auth-screen{position:fixed;inset:0;background:var(--paper);z-index:20;display:grid;place-items:center;padding:20px}
+.auth-card{width:min(100%,430px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:var(--shadow)}
+.auth-card h1{margin:8px 0;font-size:25px}.auth-card p{color:var(--muted);font-size:13px}.auth-card input{width:100%;padding:12px;border:1px solid var(--line);border-radius:9px;margin:6px 0 12px}.auth-card label{font-size:12px;font-weight:650}.auth-actions{display:grid;gap:9px;margin-top:12px}.auth-error{color:#b94c45;font-size:12px;min-height:18px}.user-email{font-size:11px;color:#d7e8d9;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<section class="auth-screen" id="authScreen">
+ <div class="auth-card">
+  <div class="brand" style="padding:0;color:var(--ink)"><div class="logo">↗</div><div><strong>LucroCerto</strong><small style="color:var(--muted)">GESTÃO INTELIGENTE</small></div></div>
+  <h1 id="authTitle">Entre na sua conta</h1><p>Seus produtos e vendas ficam associados à sua conta.</p>
+  <form id="authForm">
+   <label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" required placeholder="voce@email.com">
+   <label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres">
+   <div class="auth-error" id="authError" role="alert"></div>
+   <div class="auth-actions"><button class="btn" id="authSubmit" type="submit">Entrar</button><button class="btn secondary" id="authToggle" type="button">Criar uma conta</button></div>
+  </form>
+  <p style="font-size:11px;margin-top:16px">Ao criar uma conta, você poderá precisar confirmar seu e-mail.</p>
+ </div>
+</section>
+<div class="app" id="mainApp" style="visibility:hidden">
+<aside>
+  <div class="brand"><div class="logo">↗</div><div><strong>LucroCerto</strong><small>GESTÃO INTELIGENTE</small></div></div>
+  <div class="user-email" id="userEmail"></div><button class="nav" id="signOutBtn">↪ Sair da conta</button>
+  <nav>
+    <button class="nav active" data-view="dashboard"><span>▦</span> Visão geral</button>
+    <button class="nav" data-view="calculator"><span>％</span> Calculadora</button>
+    <button class="nav" data-view="products"><span>◇</span> Produtos</button>
+    <button class="nav" data-view="sales"><span>↗</span> Vendas</button>
+  </nav>
+  <div class="side-note"><b>Venda com clareza.</b>Cadastre seus custos e acompanhe o que realmente sobra em cada venda.</div>
+</aside>
+<main>
+  <header class="top">
+    <div><div class="eyebrow">Seu negócio, em números</div><h1 id="pageTitle">Visão geral</h1><p id="pageSubtitle">Acompanhe o desempenho das suas vendas.</p></div>
+    <div class="top-right"><span class="pill">● Dados salvos neste dispositivo</span><button class="btn" id="quickSale">＋ Registrar venda</button></div>
+  </header>
+
+  <section class="view active" id="dashboard">
+    <div class="grid stats">
+      <div class="card"><span class="stat-icon">↗</span><div class="stat-label">Vendas registradas</div><div class="stat-value" id="statSales">0</div><div class="stat-foot">Quantidade de vendas</div></div>
+      <div class="card"><span class="stat-icon">R$</span><div class="stat-label">Faturamento</div><div class="stat-value" id="statRevenue">R$ 0,00</div><div class="stat-foot">Soma das vendas</div></div>
+      <div class="card"><span class="stat-icon">✦</span><div class="stat-label">Lucro estimado</div><div class="stat-value positive" id="statProfit">R$ 0,00</div><div class="stat-foot">Após os custos informados</div></div>
+      <div class="card"><span class="stat-icon">◇</span><div class="stat-label">Produtos cadastrados</div><div class="stat-value" id="statProducts">0</div><div class="stat-foot">No seu catálogo</div></div>
+    </div>
+    <div class="grid two">
+      <div class="card"><div class="section-head"><h2>Vendas recentes</h2><small>Últimos registros</small></div><div id="recentSales"></div></div>
+      <div class="card"><div class="section-head"><h2>Comece por aqui</h2><small>3 passos simples</small></div>
+        <div style="display:grid;gap:15px">
+          <div><span class="tag">01 · Organize</span><p style="margin:7px 0 3px;font-weight:700">Cadastre seus produtos</p><small class="muted">Informe custo e preço de venda.</small></div>
+          <div><span class="tag">02 · Calcule</span><p style="margin:7px 0 3px;font-weight:700">Descubra sua margem</p><small class="muted">Inclua taxas, frete e despesas.</small></div>
+          <div><span class="tag">03 · Acompanhe</span><p style="margin:7px 0 3px;font-weight:700">Registre suas vendas</p><small class="muted">Veja faturamento e lucro estimado.</small></div>
+          <button class="btn secondary" data-go="calculator">Abrir calculadora →</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="calculator">
+    <div class="grid two">
+      <div class="card">
+        <div class="section-head"><h2>Calcule o lucro de uma venda</h2><small>Valores em reais</small></div>
+        <div class="form-grid">
+          <div class="field full"><label>Canal de venda</label><select id="calcChannel"><option>Mercado Livre</option><option>Shopee</option><option>Amazon</option><option>Loja virtual</option><option>Instagram</option><option>WhatsApp</option><option>Venda direta / outro</option></select></div>
+          <div class="field"><label>Preço de venda (R$)</label><input id="calcPrice" type="number" min="0" step=".01" value="100"></div>
+          <div class="field"><label>Custo do produto (R$)</label><input id="calcCost" type="number" min="0" step=".01" value="40"></div>
+          <div class="field"><label>Taxa da plataforma (%)</label><input id="calcFee" type="number" min="0" max="100" step=".01" value="16"></div>
+          <div class="field"><label>Frete pago por você (R$)</label><input id="calcShipping" type="number" min="0" step=".01" value="8"></div>
+          <div class="field"><label>Embalagem (R$)</label><input id="calcPacking" type="number" min="0" step=".01" value="2"></div>
+          <div class="field"><label>Publicidade (R$)</label><input id="calcAds" type="number" min="0" step=".01" value="0"></div>
+          <div class="field"><label>Impostos / outros custos (R$)</label><input id="calcTax" type="number" min="0" step=".01" value="0"></div>
+        </div>
+        <div class="actions"><button class="btn" id="saveCalcProduct">Salvar como produto</button><button class="btn secondary" id="resetCalc">Limpar campos</button></div>
+      </div>
+      <div>
+        <div class="result"><small>Lucro líquido estimado</small><strong id="calcProfit">R$ 34,00</strong><div class="sub" id="calcMargin">Margem de 34,0% sobre o preço de venda</div></div>
+        <div class="card" style="margin-top:14px"><div class="section-head"><h2>Resumo dos custos</h2></div><div id="costBreakdown"></div><p class="muted" style="font-size:11px;margin:13px 0 0">Estimativa baseada exclusivamente nos valores informados. Confirme as taxas, regras de frete e tributos aplicáveis ao seu negócio.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" id="products">
+    <div class="card">
+      <div class="section-head"><h2>Meus produtos</h2><button class="btn" id="newProduct">＋ Novo produto</button></div>
+      <div id="productFormWrap" style="display:none;background:#f8f9f6;border-radius:12px;padding:15px;margin-bottom:17px">
+        <div class="form-grid">
+          <div class="field"><label>Nome do produto</label><input id="prodName" placeholder="Ex.: Garrafa térmica"></div>
+          <div class="field"><label>Canal principal</label><select id="prodChannel"><option>Mercado Livre</option><option>Shopee</option><option>Amazon</option><option>Loja virtual</option><option>Instagram</option><option>WhatsApp</option><option>Venda direta / outro</option></select></div>
+          <div class="field"><label>Custo (R$)</label><input id="prodCost" type="number" min="0" step=".01" placeholder="0,00"></div>
+          <div class="field"><label>Preço de venda (R$)</label><input id="prodPrice" type="number" min="0" step=".01" placeholder="0,00"></div>
+        </div>
+        <div class="actions"><button class="btn" id="saveProduct">Salvar produto</button><button class="btn secondary" id="cancelProduct">Cancelar</button></div>
+      </div>
+      <div class="toolbar" style="margin-bottom:12px"><input id="productSearch" placeholder="Buscar produto..." aria-label="Buscar produto"></div>
+      <div id="productTable"></div>
+    </div>
+  </section>
+
+  <section class="view" id="sales">
+    <div class="card">
+      <div class="section-head"><h2>Registrar uma venda</h2><small>Atualize seu controle financeiro</small></div>
+      <div class="form-grid">
+        <div class="field full"><label>Produto / descrição</label><input id="saleName" placeholder="Ex.: Garrafa térmica 500ml"></div>
+        <div class="field"><label>Canal de venda</label><select id="saleChannel"><option>Mercado Livre</option><option>Shopee</option><option>Amazon</option><option>Loja virtual</option><option>Instagram</option><option>WhatsApp</option><option>Venda direta / outro</option></select></div>
+        <div class="field"><label>Data</label><input id="saleDate" type="date"></div>
+        <div class="field"><label>Valor recebido (R$)</label><input id="salePrice" type="number" min="0" step=".01" placeholder="0,00"></div>
+        <div class="field"><label>Custo total da venda (R$)</label><input id="saleCost" type="number" min="0" step=".01" placeholder="0,00"></div>
+      </div>
+      <div class="actions"><button class="btn" id="saveSale">Registrar venda</button></div>
+    </div>
+    <div class="card" style="margin-top:16px"><div class="section-head"><h2>Histórico de vendas</h2><small>Registros salvos</small></div><div id="salesTable"></div></div>
+  </section>
+  <footer style="padding:24px 4px;color:#89958d;font-size:11px">LucroCerto · Dados vinculados à sua conta.</footer>
+</main>
+</div>
+<div class="toast" id="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const $=id=>document.getElementById(id);
+const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const num=id=>Math.max(0,Number($(id).value)||0);
+// Configure com a API URL e a Publishable key do seu projeto Supabase.
+const SUPABASE_URL = 'COLE_SUA_API_URL_AQUI';
+const SUPABASE_PUBLISHABLE_KEY = 'COLE_SUA_PUBLISHABLE_KEY_AQUI';
+const supabaseReady = SUPABASE_URL.startsWith('https://') && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
+const supabase = supabaseReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+let products=[],sales=[],currentUser=null,authMode='login';
+const read=(key)=>{try{return JSON.parse(localStorage.getItem('lucrocerto_'+key)||'[]')}catch{return []}};
+const write=(key,data)=>localStorage.setItem('lucrocerto_'+key,JSON.stringify(data));
+async function loadCloudData(){
+ const [pr,sr]=await Promise.all([
+  supabase.from('Produtos').select('*').order('created_at',{ascending:false}),
+  supabase.from('Vendas').select('*').order('created_at',{ascending:false})
+ ]);
+ if(pr.error) throw pr.error; if(sr.error) throw sr.error;
+ products=(pr.data||[]).map(x=>({id:x.id,name:x.Nome,channel:x.Canal||'Venda direta / outro',cost:Number(x.Custo)||0,price:Number(x.Preco_venda)||0}));
+ sales=(sr.data||[]).map(x=>({id:x.id,name:x.Produto,channel:x.Canal||'Venda direta / outro',date:x.Data_venda,price:Number(x.Valor_venda)||0,cost:Number(x.Custo_total)||0,profit:Number(x.Lucro)||0}));
+ write('products',products);write('sales',sales);
+}
+async function saveCloudProduct(p){const {error}=await supabase.from('Produtos').insert({User_id:currentUser.id,Nome:p.name,Custo:p.cost,Preco_venda:p.price,Canal:p.channel});if(error)throw error;await loadCloudData()}
+async function saveCloudSale(v){const {error}=await supabase.from('Vendas').insert({User_id:currentUser.id,Produto:v.name,Quantidade:1,Valor_venda:v.price,Custo_total:v.cost,Lucro:v.profit,Data_venda:v.date,Canal:v.channel});if(error)throw error;await loadCloudData()}
+async function deleteCloud(table,id){const {error}=await supabase.from(table).delete().eq('id',id).eq('User_id',currentUser.id);if(error)throw error;await loadCloudData()}
+function showAuthError(msg){$('authError').textContent=msg||''}
+function updateAuthMode(){ $('authTitle').textContent=authMode==='login'?'Entre na sua conta':'Crie sua conta';$('authSubmit').textContent=authMode==='login'?'Entrar':'Criar conta';$('authToggle').textContent=authMode==='login'?'Criar uma conta':'Já tenho uma conta';$('authPassword').autocomplete=authMode==='login'?'current-password':'new-password'; }
+async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
+$('authToggle').onclick=()=>{authMode=authMode==='login'?'signup':'login';showAuthError('');updateAuthMode()};
+$('authForm').addEventListener('submit',async e=>{e.preventDefault();showAuthError('');if(!supabase){showAuthError('Configure a API URL e a Publishable key no arquivo antes de entrar.');return}const email=$('authEmail').value.trim(),password=$('authPassword').value; $('authSubmit').disabled=true;try{if(authMode==='signup'){const {data,error}=await supabase.auth.signUp({email,password});if(error)throw error;if(data.session)await enterApp(data.user);else showAuthError('Conta criada! Confira seu e-mail para confirmar o cadastro e depois entre.')}else{const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.user)}}catch(err){showAuthError(err.message||'Não foi possível autenticar.')}finally{$('authSubmit').disabled=false}});
+$('signOutBtn').onclick=async()=>{await supabase.auth.signOut();currentUser=null;products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value=''};
+if(supabase){supabase.auth.getSession().then(({data})=>{if(data.session)enterApp(data.session.user)});supabase.auth.onAuthStateChange((_event,session)=>{if(session&&!currentUser)enterApp(session.user)})}
+
+const titles={dashboard:['Visão geral','Acompanhe o desempenho das suas vendas.'],calculator:['Calculadora de lucro','Descubra quanto sobra em cada venda.'],products:['Meus produtos','Organize custos e preços do seu catálogo.'],sales:['Vendas','Registre e acompanhe suas vendas.']};
+function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2400)}
+function showView(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===name));$('pageTitle').textContent=titles[name][0];$('pageSubtitle').textContent=titles[name][1];if(name==='dashboard')renderDashboard();if(name==='products')renderProducts();if(name==='sales')renderSales();window.scrollTo({top:0,behavior:'smooth'})}
+document.querySelectorAll('.nav').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.view)));
+document.querySelectorAll('[data-go]').forEach(b=>b.addEventListener('click',()=>showView(b.dataset.go)));
+$('quickSale').onclick=()=>showView('sales');
+function calc(){let price=num('calcPrice'),cost=num('calcCost'),fee=num('calcFee'),shipping=num('calcShipping'),packing=num('calcPacking'),ads=num('calcAds'),tax=num('calcTax');let feeValue=price*fee/100,total=cost+feeValue+shipping+packing+ads+tax,profit=price-total,margin=price?profit/price*100:0;$('calcProfit').textContent=money(profit);$('calcProfit').style.color=profit<0?'#ffaaa3':'white';$('calcMargin').textContent=`Margem de ${margin.toFixed(1).replace('.',',')}% sobre o preço de venda`;$('costBreakdown').innerHTML=[['Custo do produto',cost],['Taxa da plataforma',feeValue],['Frete',shipping],['Embalagem',packing],['Publicidade',ads],['Impostos / outros',tax]].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #edf0eb;font-size:13px"><span class="muted">${k}</span><b>${money(v)}</b></div>`).join('')+`<div style="display:flex;justify-content:space-between;padding:12px 0 0;font-weight:750"><span>Total de custos</span><span>${money(total)}</span></div>`;return{price,cost,fee,shipping,packing,ads,tax,profit,margin,channel:$('calcChannel').value}}
+['calcPrice','calcCost','calcFee','calcShipping','calcPacking','calcAds','calcTax','calcChannel'].forEach(id=>$(id).addEventListener('input',calc));
+$('resetCalc').onclick=()=>{['calcPrice','calcCost','calcFee','calcShipping','calcPacking','calcAds','calcTax'].forEach(id=>$(id).value='0');$('calcChannel').selectedIndex=0;calc()};
+$('saveCalcProduct').onclick=()=>{let d=calc();let name=prompt('Nome deste produto:');if(!name)return;saveCloudProduct({name,channel:d.channel,cost:d.cost,price:d.price}).then(()=>{toast('Produto salvo no catálogo.');renderDashboard()}).catch(e=>toast('Erro ao salvar: '+e.message))};
+$('newProduct').onclick=()=>{$('productFormWrap').style.display='block';$('prodName').focus()};
+$('cancelProduct').onclick=()=>{$('productFormWrap').style.display='none'};
+$('saveProduct').onclick=()=>{let name=$('prodName').value.trim(),cost=Math.max(0,Number($('prodCost').value)||0),price=Math.max(0,Number($('prodPrice').value)||0);if(!name||price<=0){toast('Informe nome e preço de venda.');return}const item={name,channel:$('prodChannel').value,cost,price};saveCloudProduct(item).then(()=>{['prodName','prodCost','prodPrice'].forEach(id=>$(id).value='');$('productFormWrap').style.display='none';renderProducts();renderDashboard();toast('Produto cadastrado!')}).catch(e=>toast('Erro ao salvar: '+e.message))};
+function renderProducts(){let q=$('productSearch').value.toLowerCase();let list=products.filter(p=>p.name.toLowerCase().includes(q));$('productTable').innerHTML=list.length?`<div style="overflow:auto"><table><thead><tr><th>Produto</th><th>Canal</th><th>Custo</th><th>Preço</th><th>Lucro bruto*</th><th></th></tr></thead><tbody>${list.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td><span class="tag">${esc(p.channel)}</span></td><td>${money(p.cost)}</td><td>${money(p.price)}</td><td class="${p.price-p.cost>=0?'positive':'negative'}">${money(p.price-p.cost)}</td><td><button class="btn secondary" style="padding:6px 9px" onclick="deleteProduct(${p.id})">Excluir</button></td></tr>`).join('')}</tbody></table></div><p class="muted" style="font-size:10px">*Lucro bruto antes de taxas, frete, impostos e demais despesas.</p>`:'<div class="empty"><div class="emoji">◇</div>Nenhum produto cadastrado ainda.</div>'}
+$('productSearch').addEventListener('input',renderProducts);
+window.deleteProduct=id=>{if(confirm('Excluir este produto?'))deleteCloud('Produtos',id).then(()=>{renderProducts();renderDashboard();toast('Produto excluído.')}).catch(e=>toast('Erro ao excluir: '+e.message))};
+$('saleDate').value=new Date().toISOString().slice(0,10);
+$('saveSale').onclick=()=>{let name=$('saleName').value.trim(),price=Math.max(0,Number($('salePrice').value)||0),cost=Math.max(0,Number($('saleCost').value)||0);if(!name||price<=0){toast('Informe a descrição e o valor recebido.');return}saveCloudSale({name,channel:$('saleChannel').value,date:$('saleDate').value,price,cost,profit:price-cost}).then(()=>{['saleName','salePrice','saleCost'].forEach(id=>$(id).value='');$('saleDate').value=new Date().toISOString().slice(0,10);renderSales();renderDashboard();toast('Venda registrada!')}).catch(e=>toast('Erro ao salvar: '+e.message))};
+function renderSales(){$('salesTable').innerHTML=sales.length?`<div style="overflow:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Canal</th><th>Recebido</th><th>Custo</th><th>Lucro estimado</th><th></th></tr></thead><tbody>${[...sales].sort((a,b)=>b.id-a.id).map(s=>`<tr><td>${esc(s.date||'—')}</td><td><b>${esc(s.name)}</b></td><td><span class="tag">${esc(s.channel)}</span></td><td>${money(s.price)}</td><td>${money(s.cost)}</td><td class="${s.profit>=0?'positive':'negative'}">${money(s.profit)}</td><td><button class="btn secondary" style="padding:6px 9px" onclick="deleteSale(${s.id})">Excluir</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><div class="emoji">↗</div>Suas vendas registradas aparecerão aqui.</div>'}
+window.deleteSale=id=>{if(confirm('Excluir este registro?'))deleteCloud('Vendas',id).then(()=>{renderSales();renderDashboard();toast('Registro excluído.')}).catch(e=>toast('Erro ao excluir: '+e.message))};
+function renderDashboard(){let revenue=sales.reduce((a,s)=>a+s.price,0),profit=sales.reduce((a,s)=>a+s.profit,0);$('statSales').textContent=sales.length;$('statRevenue').textContent=money(revenue);$('statProfit').textContent=money(profit);$('statProfit').className='stat-value '+(profit>=0?'positive':'negative');$('statProducts').textContent=products.length;let recent=[...sales].sort((a,b)=>b.id-a.id).slice(0,5);$('recentSales').innerHTML=recent.length?`<div style="overflow:auto"><table><thead><tr><th>Venda</th><th>Canal</th><th>Lucro estimado</th></tr></thead><tbody>${recent.map(s=>`<tr><td><b>${esc(s.name)}</b><br><small class="muted">${esc(s.date||'')}</small></td><td><span class="tag">${esc(s.channel)}</span></td><td class="${s.profit>=0?'positive':'negative'}">${money(s.profit)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><div class="emoji">✦</div>Quando registrar sua primeira venda, ela aparecerá aqui.</div>'}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+calc();updateAuthMode();
+</script>
+</body>
+</html>
