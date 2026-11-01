@@ -147,8 +147,8 @@ const $=id=>document.getElementById(id);
 const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Math.max(0,Number($(id).value)||0);
 // Configure com a API URL e a Publishable key do seu projeto Supabase.
-const SUPABASE_URL = 'COLE_SUA_API_URL_AQUI';
-const SUPABASE_PUBLISHABLE_KEY = 'COLE_SUA_PUBLISHABLE_KEY_AQUI';
+const SUPABASE_URL = 'https://minfgjlxijacbhkydtkm.supabase.co/rest/v1/';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9MwWkAvON1XGdt_iGhq9tg_X2g1V-mk';
 const supabaseReady = SUPABASE_URL.startsWith('https://') && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
 const supabase = supabaseReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
 let products=[],sales=[],currentUser=null,authMode='login';
