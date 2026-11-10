@@ -141,6 +141,19 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<script>
+/* Alternância independente do carregamento do painel */
+document.getElementById('authToggle').addEventListener('click', function () {
+  const title = document.getElementById('authTitle');
+  const submit = document.getElementById('authSubmit');
+  const password = document.getElementById('authPassword');
+  const isSignup = title.textContent.trim() === 'Entre na sua conta';
+  title.textContent = isSignup ? 'Crie sua conta' : 'Entre na sua conta';
+  submit.textContent = isSignup ? 'Criar conta' : 'Entrar';
+  this.textContent = isSignup ? 'Já tenho uma conta' : 'Criar uma conta';
+  password.autocomplete = isSignup ? 'new-password' : 'current-password';
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const $=id=>document.getElementById(id);
