@@ -150,7 +150,7 @@ const num=id=>Math.max(0,Number($(id).value)||0);
 const SUPABASE_URL = 'https://minfgjlxijacbhkydtkm.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9MwWkAvON1XGdt_iGhq9tg_X2g1V-mk';
 const supabaseReady = SUPABASE_URL.startsWith('https://') && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
-const supabase = supabaseReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+const supabase = supabaseReady && window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
 let products=[],sales=[],currentUser=null,authMode='login';
 const read=(key)=>{try{return JSON.parse(localStorage.getItem('lucrocerto_'+key)||'[]')}catch{return []}};
 const write=(key,data)=>localStorage.setItem('lucrocerto_'+key,JSON.stringify(data));
