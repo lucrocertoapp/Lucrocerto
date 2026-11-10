@@ -25,12 +25,30 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
 .mobile-brand{display:none}
 @media(max-width:950px){.app{grid-template-columns:210px 1fr}.stats{grid-template-columns:repeat(2,1fr)}.two{grid-template-columns:1fr}}
 @media(max-width:680px){.app{display:block}aside{padding:12px 14px;position:sticky;top:0;z-index:3;gap:12px}.brand{padding:0}.brand small,.side-note{display:none}nav{display:flex;overflow:auto;gap:5px}.nav{padding:9px 11px;white-space:nowrap;font-size:12px}.nav span:first-child{display:none}main{padding:22px 14px}.top{align-items:flex-start}.top h1{font-size:23px}.top-right .pill{display:none}.stats{gap:9px}.card{padding:15px}.stat-value{font-size:21px}.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.top-right .btn{padding:9px 11px;font-size:12px}}
+
+.auth-screen{position:fixed;inset:0;background:var(--paper);z-index:20;display:grid;place-items:center;padding:20px}
+.auth-card{width:min(100%,430px);background:#fff;border:1px solid var(--line);border-radius:20px;padding:26px;box-shadow:var(--shadow)}
+.auth-card h1{margin:8px 0;font-size:25px}.auth-card p{color:var(--muted);font-size:13px}.auth-card input{width:100%;padding:12px;border:1px solid var(--line);border-radius:9px;margin:6px 0 12px}.auth-card label{font-size:12px;font-weight:650}.auth-actions{display:grid;gap:9px;margin-top:12px}.auth-error{color:#b94c45;font-size:12px;min-height:18px}.user-email{font-size:11px;color:#d7e8d9;overflow-wrap:anywhere}
 </style>
 </head>
 <body>
-<div class="app">
+<section class="auth-screen" id="authScreen">
+ <div class="auth-card">
+  <div class="brand" style="padding:0;color:var(--ink)"><div class="logo">↗</div><div><strong>LucroCerto</strong><small style="color:var(--muted)">GESTÃO INTELIGENTE</small></div></div>
+  <h1 id="authTitle">Entre na sua conta</h1><p>Seus produtos e vendas ficam associados à sua conta.</p>
+  <form id="authForm">
+   <label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" required placeholder="voce@email.com">
+   <label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres">
+   <div class="auth-error" id="authError" role="alert"></div>
+   <div class="auth-actions"><button class="btn" id="authSubmit" type="submit">Entrar</button><button class="btn secondary" id="authToggle" type="button">Criar uma conta</button></div>
+  </form>
+  <p style="font-size:11px;margin-top:16px">Ao criar uma conta, você poderá precisar confirmar seu e-mail.</p>
+ </div>
+</section>
+<div class="app" id="mainApp" style="visibility:hidden">
 <aside>
   <div class="brand"><div class="logo">↗</div><div><strong>LucroCerto</strong><small>GESTÃO INTELIGENTE</small></div></div>
+  <div class="user-email" id="userEmail"></div><button class="nav" id="signOutBtn">↪ Sair da conta</button>
   <nav>
     <button class="nav active" data-view="dashboard"><span>▦</span> Visão geral</button>
     <button class="nav" data-view="calculator"><span>％</span> Calculadora</button>
@@ -119,17 +137,44 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
     </div>
     <div class="card" style="margin-top:16px"><div class="section-head"><h2>Histórico de vendas</h2><small>Registros salvos</small></div><div id="salesTable"></div></div>
   </section>
-  <footer style="padding:24px 4px;color:#89958d;font-size:11px">LucroCerto · Protótipo MVP · Seus dados permanecem neste navegador.</footer>
+  <footer style="padding:24px 4px;color:#89958d;font-size:11px">LucroCerto · Dados vinculados à sua conta.</footer>
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const $=id=>document.getElementById(id);
 const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Math.max(0,Number($(id).value)||0);
+// Configure com a API URL e a Publishable key do seu projeto Supabase.
+const SUPABASE_URL = 'https://minfgjlxijacbhkydtkm.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9MwWkAvON1XGdt_iGhq9tg_X2g1V-mk';
+const supabaseReady = SUPABASE_URL.startsWith('https://') && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
+const supabase = supabaseReady ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
+let products=[],sales=[],currentUser=null,authMode='login';
 const read=(key)=>{try{return JSON.parse(localStorage.getItem('lucrocerto_'+key)||'[]')}catch{return []}};
 const write=(key,data)=>localStorage.setItem('lucrocerto_'+key,JSON.stringify(data));
-let products=read('products'),sales=read('sales');
+async function loadCloudData(){
+ const [pr,sr]=await Promise.all([
+  supabase.from('Produtos').select('*').order('created_at',{ascending:false}),
+  supabase.from('Vendas').select('*').order('created_at',{ascending:false})
+ ]);
+ if(pr.error) throw pr.error; if(sr.error) throw sr.error;
+ products=(pr.data||[]).map(x=>({id:x.id,name:x.Nome,channel:x.Canal||'Venda direta / outro',cost:Number(x.Custo)||0,price:Number(x.Preco_venda)||0}));
+ sales=(sr.data||[]).map(x=>({id:x.id,name:x.Produto,channel:x.Canal||'Venda direta / outro',date:x.Data_venda,price:Number(x.Valor_venda)||0,cost:(Number(x.Valor_venda)||0)-(Number(x.Lucro)||0),profit:Number(x.Lucro)||0}));
+ write('products',products);write('sales',sales);
+}
+async function saveCloudProduct(p){const {error}=await supabase.from('Produtos').insert({User_id:currentUser.id,Nome:p.name,Custo:p.cost,Preco_venda:p.price});if(error)throw error;await loadCloudData()}
+async function saveCloudSale(v){const {error}=await supabase.from('Vendas').insert({User_id:currentUser.id,Produto:v.name,Quantidade:1,Valor_venda:v.price,Lucro:v.profit,Data_venda:v.date});if(error)throw error;await loadCloudData()}
+async function deleteCloud(table,id){const {error}=await supabase.from(table).delete().eq('id',id).eq('User_id',currentUser.id);if(error)throw error;await loadCloudData()}
+function showAuthError(msg){$('authError').textContent=msg||''}
+function updateAuthMode(){ $('authTitle').textContent=authMode==='login'?'Entre na sua conta':'Crie sua conta';$('authSubmit').textContent=authMode==='login'?'Entrar':'Criar conta';$('authToggle').textContent=authMode==='login'?'Criar uma conta':'Já tenho uma conta';$('authPassword').autocomplete=authMode==='login'?'current-password':'new-password'; }
+async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
+$('authToggle').onclick=()=>{authMode=authMode==='login'?'signup':'login';showAuthError('');updateAuthMode()};
+$('authForm').addEventListener('submit',async e=>{e.preventDefault();showAuthError('');if(!supabase){showAuthError('Configure a API URL e a Publishable key no arquivo antes de entrar.');return}const email=$('authEmail').value.trim(),password=$('authPassword').value; $('authSubmit').disabled=true;try{if(authMode==='signup'){const {data,error}=await supabase.auth.signUp({email,password});if(error)throw error;if(data.session)await enterApp(data.user);else showAuthError('Conta criada! Confira seu e-mail para confirmar o cadastro e depois entre.')}else{const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.user)}}catch(err){showAuthError(err.message||'Não foi possível autenticar.')}finally{$('authSubmit').disabled=false}});
+$('signOutBtn').onclick=async()=>{await supabase.auth.signOut();currentUser=null;products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value=''};
+if(supabase){supabase.auth.getSession().then(({data})=>{if(data.session)enterApp(data.session.user)});supabase.auth.onAuthStateChange((_event,session)=>{if(session&&!currentUser)enterApp(session.user)})}
+
 const titles={dashboard:['Visão geral','Acompanhe o desempenho das suas vendas.'],calculator:['Calculadora de lucro','Descubra quanto sobra em cada venda.'],products:['Meus produtos','Organize custos e preços do seu catálogo.'],sales:['Vendas','Registre e acompanhe suas vendas.']};
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2400)}
 function showView(name){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id===name));document.querySelectorAll('.nav').forEach(b=>b.classList.toggle('active',b.dataset.view===name));$('pageTitle').textContent=titles[name][0];$('pageSubtitle').textContent=titles[name][1];if(name==='dashboard')renderDashboard();if(name==='products')renderProducts();if(name==='sales')renderSales();window.scrollTo({top:0,behavior:'smooth'})}
@@ -139,20 +184,20 @@ $('quickSale').onclick=()=>showView('sales');
 function calc(){let price=num('calcPrice'),cost=num('calcCost'),fee=num('calcFee'),shipping=num('calcShipping'),packing=num('calcPacking'),ads=num('calcAds'),tax=num('calcTax');let feeValue=price*fee/100,total=cost+feeValue+shipping+packing+ads+tax,profit=price-total,margin=price?profit/price*100:0;$('calcProfit').textContent=money(profit);$('calcProfit').style.color=profit<0?'#ffaaa3':'white';$('calcMargin').textContent=`Margem de ${margin.toFixed(1).replace('.',',')}% sobre o preço de venda`;$('costBreakdown').innerHTML=[['Custo do produto',cost],['Taxa da plataforma',feeValue],['Frete',shipping],['Embalagem',packing],['Publicidade',ads],['Impostos / outros',tax]].map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #edf0eb;font-size:13px"><span class="muted">${k}</span><b>${money(v)}</b></div>`).join('')+`<div style="display:flex;justify-content:space-between;padding:12px 0 0;font-weight:750"><span>Total de custos</span><span>${money(total)}</span></div>`;return{price,cost,fee,shipping,packing,ads,tax,profit,margin,channel:$('calcChannel').value}}
 ['calcPrice','calcCost','calcFee','calcShipping','calcPacking','calcAds','calcTax','calcChannel'].forEach(id=>$(id).addEventListener('input',calc));
 $('resetCalc').onclick=()=>{['calcPrice','calcCost','calcFee','calcShipping','calcPacking','calcAds','calcTax'].forEach(id=>$(id).value='0');$('calcChannel').selectedIndex=0;calc()};
-$('saveCalcProduct').onclick=()=>{let d=calc();let name=prompt('Nome deste produto:');if(!name)return;products.push({id:Date.now(),name,channel:d.channel,cost:d.cost,price:d.price});write('products',products);toast('Produto salvo no catálogo.');renderDashboard()};
+$('saveCalcProduct').onclick=()=>{let d=calc();let name=prompt('Nome deste produto:');if(!name)return;saveCloudProduct({name,channel:d.channel,cost:d.cost,price:d.price}).then(()=>{toast('Produto salvo no catálogo.');renderDashboard()}).catch(e=>toast('Erro ao salvar: '+e.message))};
 $('newProduct').onclick=()=>{$('productFormWrap').style.display='block';$('prodName').focus()};
 $('cancelProduct').onclick=()=>{$('productFormWrap').style.display='none'};
-$('saveProduct').onclick=()=>{let name=$('prodName').value.trim(),cost=Math.max(0,Number($('prodCost').value)||0),price=Math.max(0,Number($('prodPrice').value)||0);if(!name||price<=0){toast('Informe nome e preço de venda.');return}products.push({id:Date.now(),name,channel:$('prodChannel').value,cost,price});write('products',products);['prodName','prodCost','prodPrice'].forEach(id=>$(id).value='');$('productFormWrap').style.display='none';renderProducts();renderDashboard();toast('Produto cadastrado!')};
+$('saveProduct').onclick=()=>{let name=$('prodName').value.trim(),cost=Math.max(0,Number($('prodCost').value)||0),price=Math.max(0,Number($('prodPrice').value)||0);if(!name||price<=0){toast('Informe nome e preço de venda.');return}const item={name,channel:$('prodChannel').value,cost,price};saveCloudProduct(item).then(()=>{['prodName','prodCost','prodPrice'].forEach(id=>$(id).value='');$('productFormWrap').style.display='none';renderProducts();renderDashboard();toast('Produto cadastrado!')}).catch(e=>toast('Erro ao salvar: '+e.message))};
 function renderProducts(){let q=$('productSearch').value.toLowerCase();let list=products.filter(p=>p.name.toLowerCase().includes(q));$('productTable').innerHTML=list.length?`<div style="overflow:auto"><table><thead><tr><th>Produto</th><th>Canal</th><th>Custo</th><th>Preço</th><th>Lucro bruto*</th><th></th></tr></thead><tbody>${list.map(p=>`<tr><td><b>${esc(p.name)}</b></td><td><span class="tag">${esc(p.channel)}</span></td><td>${money(p.cost)}</td><td>${money(p.price)}</td><td class="${p.price-p.cost>=0?'positive':'negative'}">${money(p.price-p.cost)}</td><td><button class="btn secondary" style="padding:6px 9px" onclick="deleteProduct(${p.id})">Excluir</button></td></tr>`).join('')}</tbody></table></div><p class="muted" style="font-size:10px">*Lucro bruto antes de taxas, frete, impostos e demais despesas.</p>`:'<div class="empty"><div class="emoji">◇</div>Nenhum produto cadastrado ainda.</div>'}
 $('productSearch').addEventListener('input',renderProducts);
-window.deleteProduct=id=>{if(confirm('Excluir este produto?')){products=products.filter(p=>p.id!==id);write('products',products);renderProducts();renderDashboard();toast('Produto excluído.')}};
+window.deleteProduct=id=>{if(confirm('Excluir este produto?'))deleteCloud('Produtos',id).then(()=>{renderProducts();renderDashboard();toast('Produto excluído.')}).catch(e=>toast('Erro ao excluir: '+e.message))};
 $('saleDate').value=new Date().toISOString().slice(0,10);
-$('saveSale').onclick=()=>{let name=$('saleName').value.trim(),price=Math.max(0,Number($('salePrice').value)||0),cost=Math.max(0,Number($('saleCost').value)||0);if(!name||price<=0){toast('Informe a descrição e o valor recebido.');return}sales.push({id:Date.now(),name,channel:$('saleChannel').value,date:$('saleDate').value,price,cost,profit:price-cost});write('sales',sales);['saleName','salePrice','saleCost'].forEach(id=>$(id).value='');$('saleDate').value=new Date().toISOString().slice(0,10);renderSales();renderDashboard();toast('Venda registrada!')};
+$('saveSale').onclick=()=>{let name=$('saleName').value.trim(),price=Math.max(0,Number($('salePrice').value)||0),cost=Math.max(0,Number($('saleCost').value)||0);if(!name||price<=0){toast('Informe a descrição e o valor recebido.');return}saveCloudSale({name,channel:$('saleChannel').value,date:$('saleDate').value,price,cost,profit:price-cost}).then(()=>{['saleName','salePrice','saleCost'].forEach(id=>$(id).value='');$('saleDate').value=new Date().toISOString().slice(0,10);renderSales();renderDashboard();toast('Venda registrada!')}).catch(e=>toast('Erro ao salvar: '+e.message))};
 function renderSales(){$('salesTable').innerHTML=sales.length?`<div style="overflow:auto"><table><thead><tr><th>Data</th><th>Descrição</th><th>Canal</th><th>Recebido</th><th>Custo</th><th>Lucro estimado</th><th></th></tr></thead><tbody>${[...sales].sort((a,b)=>b.id-a.id).map(s=>`<tr><td>${esc(s.date||'—')}</td><td><b>${esc(s.name)}</b></td><td><span class="tag">${esc(s.channel)}</span></td><td>${money(s.price)}</td><td>${money(s.cost)}</td><td class="${s.profit>=0?'positive':'negative'}">${money(s.profit)}</td><td><button class="btn secondary" style="padding:6px 9px" onclick="deleteSale(${s.id})">Excluir</button></td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><div class="emoji">↗</div>Suas vendas registradas aparecerão aqui.</div>'}
-window.deleteSale=id=>{if(confirm('Excluir este registro?')){sales=sales.filter(s=>s.id!==id);write('sales',sales);renderSales();renderDashboard();toast('Registro excluído.')}};
+window.deleteSale=id=>{if(confirm('Excluir este registro?'))deleteCloud('Vendas',id).then(()=>{renderSales();renderDashboard();toast('Registro excluído.')}).catch(e=>toast('Erro ao excluir: '+e.message))};
 function renderDashboard(){let revenue=sales.reduce((a,s)=>a+s.price,0),profit=sales.reduce((a,s)=>a+s.profit,0);$('statSales').textContent=sales.length;$('statRevenue').textContent=money(revenue);$('statProfit').textContent=money(profit);$('statProfit').className='stat-value '+(profit>=0?'positive':'negative');$('statProducts').textContent=products.length;let recent=[...sales].sort((a,b)=>b.id-a.id).slice(0,5);$('recentSales').innerHTML=recent.length?`<div style="overflow:auto"><table><thead><tr><th>Venda</th><th>Canal</th><th>Lucro estimado</th></tr></thead><tbody>${recent.map(s=>`<tr><td><b>${esc(s.name)}</b><br><small class="muted">${esc(s.date||'')}</small></td><td><span class="tag">${esc(s.channel)}</span></td><td class="${s.profit>=0?'positive':'negative'}">${money(s.profit)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><div class="emoji">✦</div>Quando registrar sua primeira venda, ela aparecerá aqui.</div>'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-calc();renderDashboard();
+calc();updateAuthMode();
 </script>
 </body>
 </html>
