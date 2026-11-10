@@ -36,7 +36,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
  <div class="auth-card">
   <div class="brand" style="padding:0;color:var(--ink)"><div class="logo">↗</div><div><strong>LucroCerto</strong><small style="color:var(--muted)">GESTÃO INTELIGENTE</small></div></div>
   <h1 id="authTitle">Entre na sua conta</h1><p>Seus produtos e vendas ficam associados à sua conta.</p>
-  <form id="authForm">
+  <form id="authForm" novalidate>
    <label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" required placeholder="voce@email.com">
    <label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres">
    <div class="auth-error" id="authError" role="alert"></div>
@@ -141,19 +141,6 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script>
-/* Impede recarregamento silencioso se o script principal falhar ao iniciar. */
-document.getElementById('authForm').addEventListener('submit', function (event) {
-  event.preventDefault();
-  window.__lucroAuthSubmitHandled = false;
-  setTimeout(function () {
-    if (!window.__lucroAuthSubmitHandled) {
-      const message = document.getElementById('authError');
-      if (message) message.textContent = 'O formulário não conseguiu iniciar. Atualize a página e tente novamente.';
-    }
-  }, 0);
-}, true);
-</script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const $=id=>document.getElementById(id);
@@ -181,26 +168,38 @@ async function saveCloudProduct(p){const {error}=await supabase.from('Produtos')
 async function saveCloudSale(v){const {error}=await supabase.from('Vendas').insert({User_id:currentUser.id,Produto:v.name,Canal:v.channel,Quantidade:1,Valor_venda:v.price,Lucro:v.profit,Data_venda:v.date});if(error)throw error;await loadCloudData()}
 async function deleteCloud(table,id){const {error}=await supabase.from(table).delete().eq('id',id).eq('User_id',currentUser.id);if(error)throw error;await loadCloudData()}
 function showAuthError(msg){$('authError').textContent=msg||''}
-function updateAuthMode(){ $('authTitle').textContent=authMode==='login'?'Entre na sua conta':'Crie sua conta';$('authSubmit').textContent=authMode==='login'?'Entrar':'Criar conta';$('authToggle').textContent=authMode==='login'?'Criar uma conta':'Já tenho uma conta';$('authPassword').autocomplete=authMode==='login'?'current-password':'new-password'; }
-async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
-$('authToggle').onclick=()=>{authMode=authMode==='login'?'signup':'login';showAuthError('');updateAuthMode()};
-$('authForm').addEventListener('submit',async e=>{
- window.__lucroAuthSubmitHandled = true;
- e.preventDefault();
+function setAuthMode(mode){
+ authMode=mode;
+ $('authForm').dataset.mode=mode;
+ $('authTitle').textContent=mode==='signup'?'Crie sua conta':'Entre na sua conta';
+ $('authSubmit').textContent=mode==='signup'?'Criar conta':'Entrar';
+ $('authToggle').textContent=mode==='signup'?'Já tenho uma conta':'Criar uma conta';
+ $('authPassword').autocomplete=mode==='signup'?'new-password':'current-password';
  showAuthError('');
- const email=$('authEmail').value.trim(),password=$('authPassword').value;
- authMode=$('authTitle').textContent.trim()==='Crie sua conta'?'signup':'login';
- if(!email||!password){showAuthError('Preencha o e-mail e a senha.');return}
+}
+async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
+setAuthMode('login');
+$('authToggle').addEventListener('click',()=>setAuthMode(authMode==='login'?'signup':'login'));
+$('authForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ e.stopImmediatePropagation();
+ const mode=$('authForm').dataset.mode||'login';
+ const email=$('authEmail').value.trim();
+ const password=$('authPassword').value;
+ showAuthError('');
+ if(!email||!$('authEmail').checkValidity()){showAuthError('Digite um e-mail válido.');return}
+ if(!password){showAuthError('Digite sua senha.');return}
  if(password.length<6){showAuthError('A senha precisa ter pelo menos 6 caracteres.');return}
  if(!supabase){showAuthError('Não foi possível conectar ao serviço de cadastro. Atualize a página e tente novamente.');return}
- const submit=$('authSubmit'),originalText=submit.textContent;
- submit.disabled=true;submit.textContent=authMode==='signup'?'Criando conta...':'Entrando...';
+ const submit=$('authSubmit');
+ submit.disabled=true;
+ submit.textContent=mode==='signup'?'Criando conta...':'Entrando...';
  try{
-  if(authMode==='signup'){
+  if(mode==='signup'){
    const {data,error}=await supabase.auth.signUp({email,password});
    if(error)throw error;
    if(data.session&&data.user){await enterApp(data.user)}
-   else if(data.user){showAuthError('Cadastro recebido! Verifique sua caixa de entrada e a pasta de spam para confirmar seu e-mail. Depois volte e entre com sua conta.')}
+   else if(data.user){showAuthError('Cadastro recebido! Verifique seu e-mail e a pasta de spam para confirmar a conta.')}
    else{showAuthError('O serviço não confirmou a criação da conta. Tente novamente.')}
   }else{
    const {data,error}=await supabase.auth.signInWithPassword({email,password});
@@ -212,9 +211,11 @@ $('authForm').addEventListener('submit',async e=>{
   console.error('LucroCerto autenticação:',err);
   showAuthError(err?.message||'Não foi possível concluir. Verifique sua conexão e tente novamente.');
  }finally{
-  submit.disabled=false;submit.textContent=originalText;
+  submit.disabled=false;
+  submit.textContent=authMode==='signup'?'Criar conta':'Entrar';
  }
 });
+
 $('signOutBtn').onclick=async()=>{await supabase.auth.signOut();currentUser=null;products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value=''};
 if(supabase){supabase.auth.getSession().then(({data})=>{if(data.session)enterApp(data.session.user)});supabase.auth.onAuthStateChange((_event,session)=>{if(session&&!currentUser)enterApp(session.user)})}
 
