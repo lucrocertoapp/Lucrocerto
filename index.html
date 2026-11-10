@@ -45,6 +45,24 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
   <p style="font-size:11px;margin-top:16px">Ao criar uma conta, você poderá precisar confirmar seu e-mail.</p>
  </div>
 </section>
+<script>
+window.toggleLucroAuth = function(){
+ const form=document.getElementById('authForm');
+ const title=document.getElementById('authTitle');
+ const submit=document.getElementById('authSubmit');
+ const toggle=document.getElementById('authToggle');
+ const password=document.getElementById('authPassword');
+ const error=document.getElementById('authError');
+ if(!form||!title||!submit||!toggle||!password)return;
+ const mode=form.dataset.mode==='signup'?'login':'signup';
+ form.dataset.mode=mode;
+ title.textContent=mode==='signup'?'Crie sua conta':'Entre na sua conta';
+ submit.textContent=mode==='signup'?'Criar conta':'Entrar';
+ toggle.textContent=mode==='signup'?'Já tenho uma conta':'Criar uma conta';
+ password.autocomplete=mode==='signup'?'new-password':'current-password';
+ if(error)error.textContent='';
+};
+</script>
 <div class="app" id="mainApp" style="visibility:hidden">
 <aside>
   <div class="brand"><div class="logo">↗</div><div><strong>LucroCerto</strong><small>GESTÃO INTELIGENTE</small></div></div>
