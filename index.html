@@ -40,7 +40,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
    <label for="authEmail">E-mail</label><input id="authEmail" type="email" autocomplete="email" required placeholder="voce@email.com">
    <label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres">
    <div class="auth-error" id="authError" role="alert"></div>
-   <div class="auth-actions"><button class="btn" id="authSubmit" type="submit">Entrar</button><button class="btn secondary" id="authToggle" type="button">Criar uma conta</button></div>
+   <div class="auth-actions"><button class="btn" id="authSubmit" type="submit">Entrar</button><button class="btn secondary" id="authToggle" type="button" onclick="window.toggleLucroAuth()">Criar uma conta</button></div>
   </form>
   <p style="font-size:11px;margin-top:16px">Ao criar uma conta, você poderá precisar confirmar seu e-mail.</p>
  </div>
@@ -179,7 +179,7 @@ function setAuthMode(mode){
 }
 async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
 setAuthMode('login');
-$('authToggle').addEventListener('click',()=>setAuthMode(authMode==='login'?'signup':'login'));
+window.toggleLucroAuth=()=>setAuthMode(authMode==='login'?'signup':'login');
 $('authForm').addEventListener('submit',async e=>{
  e.preventDefault();
  e.stopImmediatePropagation();
@@ -241,7 +241,7 @@ function renderSales(){$('salesTable').innerHTML=sales.length?`<div style="overf
 window.deleteSale=id=>{if(confirm('Excluir este registro?'))deleteCloud('Vendas',id).then(()=>{renderSales();renderDashboard();toast('Registro excluído.')}).catch(e=>toast('Erro ao excluir: '+e.message))};
 function renderDashboard(){let revenue=sales.reduce((a,s)=>a+s.price,0),profit=sales.reduce((a,s)=>a+s.profit,0);$('statSales').textContent=sales.length;$('statRevenue').textContent=money(revenue);$('statProfit').textContent=money(profit);$('statProfit').className='stat-value '+(profit>=0?'positive':'negative');$('statProducts').textContent=products.length;let recent=[...sales].sort((a,b)=>b.id-a.id).slice(0,5);$('recentSales').innerHTML=recent.length?`<div style="overflow:auto"><table><thead><tr><th>Venda</th><th>Canal</th><th>Lucro estimado</th></tr></thead><tbody>${recent.map(s=>`<tr><td><b>${esc(s.name)}</b><br><small class="muted">${esc(s.date||'')}</small></td><td><span class="tag">${esc(s.channel)}</span></td><td class="${s.profit>=0?'positive':'negative'}">${money(s.profit)}</td></tr>`).join('')}</tbody></table></div>`:'<div class="empty"><div class="emoji">✦</div>Quando registrar sua primeira venda, ela aparecerá aqui.</div>'}
 function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
-calc();updateAuthMode();
+calc();setAuthMode(authMode);
 </script>
 </body>
 </html>
