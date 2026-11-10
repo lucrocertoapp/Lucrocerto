@@ -164,8 +164,8 @@ async function loadCloudData(){
  sales=(sr.data||[]).map(x=>({id:x.id,name:x.Produto,channel:x.Canal||'Venda direta / outro',date:x.Data_venda,price:Number(x.Valor_venda)||0,cost:(Number(x.Valor_venda)||0)-(Number(x.Lucro)||0),profit:Number(x.Lucro)||0}));
  write('products',products);write('sales',sales);
 }
-async function saveCloudProduct(p){const {error}=await supabase.from('Produtos').insert({User_id:currentUser.id,Nome:p.name,Custo:p.cost,Preco_venda:p.price});if(error)throw error;await loadCloudData()}
-async function saveCloudSale(v){const {error}=await supabase.from('Vendas').insert({User_id:currentUser.id,Produto:v.name,Quantidade:1,Valor_venda:v.price,Lucro:v.profit,Data_venda:v.date});if(error)throw error;await loadCloudData()}
+async function saveCloudProduct(p){const {error}=await supabase.from('Produtos').insert({User_id:currentUser.id,Nome:p.name,Canal:p.channel,Custo:p.cost,Preco_venda:p.price});if(error)throw error;await loadCloudData()}
+async function saveCloudSale(v){const {error}=await supabase.from('Vendas').insert({User_id:currentUser.id,Produto:v.name,Canal:v.channel,Quantidade:1,Valor_venda:v.price,Lucro:v.profit,Data_venda:v.date});if(error)throw error;await loadCloudData()}
 async function deleteCloud(table,id){const {error}=await supabase.from(table).delete().eq('id',id).eq('User_id',currentUser.id);if(error)throw error;await loadCloudData()}
 function showAuthError(msg){$('authError').textContent=msg||''}
 function updateAuthMode(){ $('authTitle').textContent=authMode==='login'?'Entre na sua conta':'Crie sua conta';$('authSubmit').textContent=authMode==='login'?'Entrar':'Criar conta';$('authToggle').textContent=authMode==='login'?'Criar uma conta':'Já tenho uma conta';$('authPassword').autocomplete=authMode==='login'?'current-password':'new-password'; }
