@@ -184,7 +184,36 @@ function showAuthError(msg){$('authError').textContent=msg||''}
 function updateAuthMode(){ $('authTitle').textContent=authMode==='login'?'Entre na sua conta':'Crie sua conta';$('authSubmit').textContent=authMode==='login'?'Entrar':'Criar conta';$('authToggle').textContent=authMode==='login'?'Criar uma conta':'Já tenho uma conta';$('authPassword').autocomplete=authMode==='login'?'current-password':'new-password'; }
 async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
 $('authToggle').onclick=()=>{authMode=authMode==='login'?'signup':'login';showAuthError('');updateAuthMode()};
-$('authForm').addEventListener('submit',async e=>{e.preventDefault();showAuthError('');if(!supabase){showAuthError('Configure a API URL e a Publishable key no arquivo antes de entrar.');return}const email=$('authEmail').value.trim(),password=$('authPassword').value; $('authSubmit').disabled=true;try{if(authMode==='signup'){const {data,error}=await supabase.auth.signUp({email,password});if(error)throw error;if(data.session)await enterApp(data.user);else showAuthError('Conta criada! Confira seu e-mail para confirmar o cadastro e depois entre.')}else{const {data,error}=await supabase.auth.signInWithPassword({email,password});if(error)throw error;await enterApp(data.user)}}catch(err){showAuthError(err.message||'Não foi possível autenticar.')}finally{$('authSubmit').disabled=false}});
+$('authForm').addEventListener('submit',async e=>{
+ e.preventDefault();
+ showAuthError('');
+ const email=$('authEmail').value.trim(),password=$('authPassword').value;
+ authMode=$('authTitle').textContent.trim()==='Crie sua conta'?'signup':'login';
+ if(!email||!password){showAuthError('Preencha o e-mail e a senha.');return}
+ if(password.length<6){showAuthError('A senha precisa ter pelo menos 6 caracteres.');return}
+ if(!supabase){showAuthError('Não foi possível conectar ao serviço de cadastro. Atualize a página e tente novamente.');return}
+ const submit=$('authSubmit'),originalText=submit.textContent;
+ submit.disabled=true;submit.textContent=authMode==='signup'?'Criando conta...':'Entrando...';
+ try{
+  if(authMode==='signup'){
+   const {data,error}=await supabase.auth.signUp({email,password});
+   if(error)throw error;
+   if(data.session&&data.user){await enterApp(data.user)}
+   else if(data.user){showAuthError('Cadastro recebido! Verifique sua caixa de entrada e a pasta de spam para confirmar seu e-mail. Depois volte e entre com sua conta.')}
+   else{showAuthError('O serviço não confirmou a criação da conta. Tente novamente.')}
+  }else{
+   const {data,error}=await supabase.auth.signInWithPassword({email,password});
+   if(error)throw error;
+   if(!data.user)throw new Error('O login não retornou um usuário. Tente novamente.');
+   await enterApp(data.user);
+  }
+ }catch(err){
+  console.error('LucroCerto autenticação:',err);
+  showAuthError(err?.message||'Não foi possível concluir. Verifique sua conexão e tente novamente.');
+ }finally{
+  submit.disabled=false;submit.textContent=originalText;
+ }
+});
 $('signOutBtn').onclick=async()=>{await supabase.auth.signOut();currentUser=null;products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value=''};
 if(supabase){supabase.auth.getSession().then(({data})=>{if(data.session)enterApp(data.session.user)});supabase.auth.onAuthStateChange((_event,session)=>{if(session&&!currentUser)enterApp(session.user)})}
 
