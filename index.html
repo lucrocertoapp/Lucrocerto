@@ -142,17 +142,17 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
 </div>
 <div class="toast" id="toast" role="status"></div>
 <script>
-/* Alternância independente do carregamento do painel */
-document.getElementById('authToggle').addEventListener('click', function () {
-  const title = document.getElementById('authTitle');
-  const submit = document.getElementById('authSubmit');
-  const password = document.getElementById('authPassword');
-  const isSignup = title.textContent.trim() === 'Entre na sua conta';
-  title.textContent = isSignup ? 'Crie sua conta' : 'Entre na sua conta';
-  submit.textContent = isSignup ? 'Criar conta' : 'Entrar';
-  this.textContent = isSignup ? 'Já tenho uma conta' : 'Criar uma conta';
-  password.autocomplete = isSignup ? 'new-password' : 'current-password';
-});
+/* Impede recarregamento silencioso se o script principal falhar ao iniciar. */
+document.getElementById('authForm').addEventListener('submit', function (event) {
+  event.preventDefault();
+  window.__lucroAuthSubmitHandled = false;
+  setTimeout(function () {
+    if (!window.__lucroAuthSubmitHandled) {
+      const message = document.getElementById('authError');
+      if (message) message.textContent = 'O formulário não conseguiu iniciar. Atualize a página e tente novamente.';
+    }
+  }, 0);
+}, true);
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -185,6 +185,7 @@ function updateAuthMode(){ $('authTitle').textContent=authMode==='login'?'Entre 
 async function enterApp(user){currentUser=user;$('authScreen').style.display='none';$('mainApp').style.visibility='visible';$('userEmail').textContent=user.email||'';try{await loadCloudData();renderDashboard();}catch(e){toast('Erro ao carregar dados: '+e.message)}}
 $('authToggle').onclick=()=>{authMode=authMode==='login'?'signup':'login';showAuthError('');updateAuthMode()};
 $('authForm').addEventListener('submit',async e=>{
+ window.__lucroAuthSubmitHandled = true;
  e.preventDefault();
  showAuthError('');
  const email=$('authEmail').value.trim(),password=$('authPassword').value;
