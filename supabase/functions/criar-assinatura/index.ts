@@ -54,6 +54,7 @@ Deno.serve(async (req: Request) => {
         currency_id: "BRL",
       },
       back_url: "https://lucrocertoapp.github.io/Lucrocerto/?assinatura=retorno",
+      notification_url: "https://minfgjlxijacbhkydtkm.supabase.co/functions/v1/mercado-pago-webhook",
       payer_email: user.email,
       external_reference: user.id,
       status: "pending",
