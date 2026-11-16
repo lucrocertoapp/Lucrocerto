@@ -1,5 +1,5 @@
 // LucroCerto — webhook de assinaturas Mercado Pago
-// Segredos: MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY
+// Segredos: MP_ACCESS_TOKEN, MP_WEBHOOK_SECRET, SUPABASE_URL, SERVICE_ROLE_KEY
 // Deploy com Verify JWT desativado: o Mercado Pago não envia JWT do Supabase.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -57,7 +57,7 @@ Deno.serve(async (req: Request) => {
     const mpToken = Deno.env.get("MP_ACCESS_TOKEN");
     const webhookSecret = Deno.env.get("MP_WEBHOOK_SECRET");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const serviceKey = Deno.env.get("SERVICE_ROLE_KEY");
     if (!mpToken || !webhookSecret || !supabaseUrl || !serviceKey) {
       console.error("Webhook secrets incompletos.");
       return json(500, { error: "Configuração incompleta." });
