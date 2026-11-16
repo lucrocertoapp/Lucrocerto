@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://lucrocertoapp.github.io/Lucrocerto/sitemap.xml
