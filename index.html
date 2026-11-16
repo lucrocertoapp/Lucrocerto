@@ -159,32 +159,35 @@ window.toggleLucroAuth = function(){
 </main>
 </div>
 <div class="toast" id="toast" role="status"></div>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const $=id=>document.getElementById(id);
 const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 const num=id=>Math.max(0,Number($(id).value)||0);
 // Configure com a API URL e a Publishable key do seu projeto Supabase.
-const SUPABASE_URL = 'https://minfgjlxijacbhkydtkm.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_9MwWkAvON1XGdt_iGhq9tg_X2g1V-mk';
-const supabaseReady = SUPABASE_URL.startsWith('https://') && SUPABASE_PUBLISHABLE_KEY.startsWith('sb_publishable_');
-const supabase = supabaseReady && window.supabase?.createClient ? window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY) : null;
-let products=[],sales=[],currentUser=null,authMode='login';
+const SUPABASE_URL='https://minfgjlxijacbhkydtkm.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_9MwWkAvON1XGdt_iGhq9tg_X2g1V-mk';
+const TOKEN_KEY='lucrocerto_access_token';
+let accessToken=localStorage.getItem(TOKEN_KEY)||'',currentUser=null;
+function authHeaders(token=accessToken){return {'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+(token||SUPABASE_PUBLISHABLE_KEY),'Content-Type':'application/json'};}
+async function requestJson(url,options={}){const response=await fetch(url,options),raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{data={message:raw||'Resposta inválida do servidor.'}}if(!response.ok)throw new Error(data.msg||data.message||data.error_description||data.error||'Falha na comunicação com o servidor.');return data;}
+async function authPost(path,body){return requestJson(SUPABASE_URL+'/auth/v1/'+path,{method:'POST',headers:authHeaders(''),body:JSON.stringify(body)});}
+async function signUp(email,password){const data=await authPost('signup',{email,password});if(data.access_token){accessToken=data.access_token;localStorage.setItem(TOKEN_KEY,accessToken)}return data;}
+async function signIn(email,password){const data=await authPost('token?grant_type=password',{email,password});if(!data.access_token||!data.user)throw new Error('O login não retornou uma sessão válida.');accessToken=data.access_token;localStorage.setItem(TOKEN_KEY,accessToken);return data.user;}
+async function restoreSession(){if(!accessToken)return;try{currentUser=await requestJson(SUPABASE_URL+'/auth/v1/user',{headers:authHeaders()});await enterApp(currentUser)}catch(e){accessToken='';localStorage.removeItem(TOKEN_KEY)}}
+async function signOut(){try{if(accessToken)await requestJson(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:authHeaders()})}catch(e){}accessToken='';currentUser=null;localStorage.removeItem(TOKEN_KEY)}
+
 const read=(key)=>{try{return JSON.parse(localStorage.getItem('lucrocerto_'+key)||'[]')}catch{return []}};
 const write=(key,data)=>localStorage.setItem('lucrocerto_'+key,JSON.stringify(data));
 async function loadCloudData(){
- const [pr,sr]=await Promise.all([
-  supabase.from('Produtos').select('*').order('created_at',{ascending:false}),
-  supabase.from('Vendas').select('*').order('created_at',{ascending:false})
- ]);
- if(pr.error) throw pr.error; if(sr.error) throw sr.error;
- products=(pr.data||[]).map(x=>({id:x.id,name:x.Nome,channel:x.Canal||'Venda direta / outro',cost:Number(x.Custo)||0,price:Number(x.Preco_venda)||0}));
- sales=(sr.data||[]).map(x=>({id:x.id,name:x.Produto,channel:x.Canal||'Venda direta / outro',date:x.Data_venda,price:Number(x.Valor_venda)||0,cost:(Number(x.Valor_venda)||0)-(Number(x.Lucro)||0),profit:Number(x.Lucro)||0}));
+ const [pd,sd]=await Promise.all([dbRequest('Produtos','?select=*&order=created_at.desc'),dbRequest('Vendas','?select=*&order=created_at.desc')]);
+ products=(pd||[]).map(x=>({id:x.id,name:x.Nome,channel:x.Canal||'Venda direta / outro',cost:Number(x.Custo)||0,price:Number(x.Preco_venda)||0}));
+ sales=(sd||[]).map(x=>({id:x.id,name:x.Produto,channel:x.Canal||'Venda direta / outro',date:x.Data_venda,price:Number(x.Valor_venda)||0,cost:(Number(x.Valor_venda)||0)-(Number(x.Lucro)||0),profit:Number(x.Lucro)||0}));
  write('products',products);write('sales',sales);
 }
-async function saveCloudProduct(p){const {error}=await supabase.from('Produtos').insert({User_id:currentUser.id,Nome:p.name,Canal:p.channel,Custo:p.cost,Preco_venda:p.price});if(error)throw error;await loadCloudData()}
-async function saveCloudSale(v){const {error}=await supabase.from('Vendas').insert({User_id:currentUser.id,Produto:v.name,Canal:v.channel,Quantidade:1,Valor_venda:v.price,Lucro:v.profit,Data_venda:v.date});if(error)throw error;await loadCloudData()}
-async function deleteCloud(table,id){const {error}=await supabase.from(table).delete().eq('id',id).eq('User_id',currentUser.id);if(error)throw error;await loadCloudData()}
+async function dbRequest(table,query='',options={}){if(!accessToken||!currentUser)throw new Error('Sua sessão expirou. Entre novamente.');return requestJson(SUPABASE_URL+'/rest/v1/'+table+query,{...options,headers:{...authHeaders(),'Prefer':'return=minimal'}});}
+async function saveCloudProduct(p){await dbRequest('Produtos','',{method:'POST',body:JSON.stringify({User_id:currentUser.id,Nome:p.name,Canal:p.channel,Custo:p.cost,Preco_venda:p.price})});await loadCloudData()}
+async function saveCloudSale(v){await dbRequest('Vendas','',{method:'POST',body:JSON.stringify({User_id:currentUser.id,Produto:v.name,Canal:v.channel,Quantidade:1,Valor_venda:v.price,Lucro:v.profit,Data_venda:v.date})});await loadCloudData()}
+async function deleteCloud(table,id){await dbRequest(table,'?id=eq.'+encodeURIComponent(id)+'&User_id=eq.'+encodeURIComponent(currentUser.id),{method:'DELETE'});await loadCloudData()}
 function showAuthError(msg){$('authError').textContent=msg||''}
 function setAuthMode(mode){
  authMode=mode;
@@ -199,43 +202,18 @@ async function enterApp(user){currentUser=user;$('authScreen').style.display='no
 setAuthMode('login');
 window.toggleLucroAuth=()=>setAuthMode(authMode==='login'?'signup':'login');
 $('authForm').addEventListener('submit',async e=>{
- e.preventDefault();
- e.stopImmediatePropagation();
- const mode=$('authForm').dataset.mode||'login';
- const email=$('authEmail').value.trim();
- const password=$('authPassword').value;
- showAuthError('');
+ e.preventDefault();const mode=$('authForm').dataset.mode||'login',email=$('authEmail').value.trim(),password=$('authPassword').value;showAuthError('');
  if(!email||!$('authEmail').checkValidity()){showAuthError('Digite um e-mail válido.');return}
  if(!password){showAuthError('Digite sua senha.');return}
  if(password.length<6){showAuthError('A senha precisa ter pelo menos 6 caracteres.');return}
- if(!supabase){showAuthError('Não foi possível conectar ao serviço de cadastro. Atualize a página e tente novamente.');return}
- const submit=$('authSubmit');
- submit.disabled=true;
- submit.textContent=mode==='signup'?'Criando conta...':'Entrando...';
- try{
-  if(mode==='signup'){
-   const {data,error}=await supabase.auth.signUp({email,password});
-   if(error)throw error;
-   if(data.session&&data.user){await enterApp(data.user)}
-   else if(data.user){showAuthError('Cadastro recebido! Verifique seu e-mail e a pasta de spam para confirmar a conta.')}
-   else{showAuthError('O serviço não confirmou a criação da conta. Tente novamente.')}
-  }else{
-   const {data,error}=await supabase.auth.signInWithPassword({email,password});
-   if(error)throw error;
-   if(!data.user)throw new Error('O login não retornou um usuário. Tente novamente.');
-   await enterApp(data.user);
-  }
- }catch(err){
-  console.error('LucroCerto autenticação:',err);
-  showAuthError(err?.message||'Não foi possível concluir. Verifique sua conexão e tente novamente.');
- }finally{
-  submit.disabled=false;
-  submit.textContent=authMode==='signup'?'Criar conta':'Entrar';
- }
+ const submit=$('authSubmit');submit.disabled=true;submit.textContent=mode==='signup'?'Criando conta...':'Entrando...';
+ try{if(mode==='signup'){const data=await signUp(email,password);if(data.access_token&&data.user){currentUser=data.user;await enterApp(data.user)}else if(data.user){showAuthError('Cadastro recebido! Verifique seu e-mail e a pasta de spam para confirmar a conta.')}else{showAuthError('O serviço não confirmou a criação da conta. Tente novamente.')}}else{const user=await signIn(email,password);currentUser=user;await enterApp(user)}}
+ catch(err){console.error('LucroCerto autenticação:',err);showAuthError(err?.message||'Não foi possível concluir. Verifique sua conexão e tente novamente.')}
+ finally{submit.disabled=false;submit.textContent=authMode==='signup'?'Criar conta':'Entrar'}
 });
 
-$('signOutBtn').onclick=async()=>{await supabase.auth.signOut();currentUser=null;products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value=''};
-if(supabase){supabase.auth.getSession().then(({data})=>{if(data.session)enterApp(data.session.user)});supabase.auth.onAuthStateChange((_event,session)=>{if(session&&!currentUser)enterApp(session.user)})}
+$('signOutBtn').onclick=async()=>{await signOut();products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value='';setAuthMode('login')};
+restoreSession();
 
 const titles={dashboard:['Visão geral','Acompanhe o desempenho das suas vendas.'],calculator:['Calculadora de lucro','Descubra quanto sobra em cada venda.'],products:['Meus produtos','Organize custos e preços do seu catálogo.'],sales:['Vendas','Registre e acompanhe suas vendas.']};
 function toast(msg){$('toast').textContent=msg;$('toast').style.display='block';setTimeout(()=>$('toast').style.display='none',2400)}
