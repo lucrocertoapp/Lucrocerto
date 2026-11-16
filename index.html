@@ -41,6 +41,7 @@ table{width:100%;border-collapse:collapse;font-size:13px}th{text-align:left;colo
    <label for="authPassword">Senha</label><input id="authPassword" type="password" autocomplete="current-password" minlength="6" required placeholder="Mínimo de 6 caracteres">
    <div class="auth-error" id="authError" role="alert"></div>
    <div class="auth-actions"><button class="btn" id="authSubmit" type="submit">Entrar</button><button class="btn secondary" id="authToggle" type="button" onclick="window.toggleLucroAuth()">Criar uma conta</button></div>
+  <button class="btn secondary" id="authResend" type="button" style="width:100%;margin-top:10px">Reenviar e-mail de confirmação</button>
   </form>
   <p style="font-size:11px;margin-top:16px">Ao criar uma conta, você poderá precisar confirmar seu e-mail.</p>
  </div>
@@ -211,6 +212,17 @@ $('authForm').addEventListener('submit',async e=>{
  try{if(mode==='signup'){const data=await signUp(email,password);if(data.access_token&&data.user){currentUser=data.user;await enterApp(data.user)}else if(data.user){showAuthError('Cadastro recebido! Verifique seu e-mail e a pasta de spam para confirmar a conta.')}else{showAuthError('O serviço não confirmou a criação da conta. Tente novamente.')}}else{const user=await signIn(email,password);currentUser=user;await enterApp(user)}}
  catch(err){console.error('LucroCerto autenticação:',err);showAuthError(err?.message||'Não foi possível concluir. Verifique sua conexão e tente novamente.')}
  finally{submit.disabled=false;submit.textContent=authMode==='signup'?'Criar conta':'Entrar'}
+});
+
+
+$('authResend').addEventListener('click',async()=>{
+ const email=$('authEmail').value.trim();
+ showAuthError('');
+ if(!email||!$('authEmail').checkValidity()){showAuthError('Digite seu e-mail para reenviar a confirmação.');return}
+ const btn=$('authResend');btn.disabled=true;btn.textContent='Enviando...';
+ try{await authPost('resend?redirect_to='+encodeURIComponent(APP_URL),{type:'signup',email});showAuthError('Solicitação enviada. Confira sua caixa de entrada e o spam.')}
+ catch(err){showAuthError(err?.message||'Não foi possível reenviar. Tente novamente em alguns minutos.')}
+ finally{btn.disabled=false;btn.textContent='Reenviar e-mail de confirmação'}
 });
 
 $('signOutBtn').onclick=async()=>{await signOut();products=[];sales=[];$('mainApp').style.visibility='hidden';$('authScreen').style.display='grid';$('authPassword').value='';setAuthMode('login')};
