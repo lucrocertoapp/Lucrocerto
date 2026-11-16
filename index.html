@@ -165,13 +165,14 @@ const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:
 const num=id=>Math.max(0,Number($(id).value)||0);
 // Configure com a API URL e a Publishable key do seu projeto Supabase.
 const SUPABASE_URL='https://minfgjlxijacbhkydtkm.supabase.co';
+const APP_URL='https://lucrocertoapp.github.io/Lucrocerto/';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_9MwWkAvON1XGdt_iGhq9tg_X2g1V-mk';
 const TOKEN_KEY='lucrocerto_access_token';
 let accessToken=localStorage.getItem(TOKEN_KEY)||'',currentUser=null;
 function authHeaders(token=accessToken){return {'apikey':SUPABASE_PUBLISHABLE_KEY,'Authorization':'Bearer '+(token||SUPABASE_PUBLISHABLE_KEY),'Content-Type':'application/json'};}
 async function requestJson(url,options={}){const response=await fetch(url,options),raw=await response.text();let data={};try{data=raw?JSON.parse(raw):{}}catch{data={message:raw||'Resposta inválida do servidor.'}}if(!response.ok)throw new Error(data.msg||data.message||data.error_description||data.error||'Falha na comunicação com o servidor.');return data;}
 async function authPost(path,body){return requestJson(SUPABASE_URL+'/auth/v1/'+path,{method:'POST',headers:authHeaders(''),body:JSON.stringify(body)});}
-async function signUp(email,password){const data=await authPost('signup',{email,password});const user=data.user||(data.id?data:null);const session=data.session||data;const token=session.access_token||data.access_token;if(token){accessToken=token;localStorage.setItem(TOKEN_KEY,accessToken)}return {...data,user,access_token:token};}
+async function signUp(email,password){const data=await authPost('signup?redirect_to='+encodeURIComponent(APP_URL),{email,password});const user=data.user||(data.id?data:null);const session=data.session||data;const token=session.access_token||data.access_token;if(token){accessToken=token;localStorage.setItem(TOKEN_KEY,accessToken)}return {...data,user,access_token:token};}
 async function signIn(email,password){const data=await authPost('token?grant_type=password',{email,password});if(!data.access_token||!data.user)throw new Error('O login não retornou uma sessão válida.');accessToken=data.access_token;localStorage.setItem(TOKEN_KEY,accessToken);return data.user;}
 async function restoreSession(){if(!accessToken)return;try{currentUser=await requestJson(SUPABASE_URL+'/auth/v1/user',{headers:authHeaders()});await enterApp(currentUser)}catch(e){accessToken='';localStorage.removeItem(TOKEN_KEY)}}
 async function signOut(){try{if(accessToken)await requestJson(SUPABASE_URL+'/auth/v1/logout',{method:'POST',headers:authHeaders()})}catch(e){}accessToken='';currentUser=null;localStorage.removeItem(TOKEN_KEY)}
